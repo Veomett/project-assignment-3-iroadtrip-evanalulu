@@ -1,8 +1,12 @@
-public class Tuple<X, Y> {
-    public final X x;
-    public final Y y;
-    public Tuple(X x, Y y) {
-        this.x = x;
-        this.y = y;
+public class Tuple<COUNTRY, DISTANCE> {
+    public final COUNTRY country;
+    public final DISTANCE distance;
+    public Tuple(COUNTRY country, DISTANCE distance) {
+        this.country = country;
+        this.distance = distance;
+    }
+
+    public DISTANCE getDistance() {
+        return distance;
     }
 }

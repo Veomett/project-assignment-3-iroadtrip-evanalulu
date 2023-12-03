@@ -1,12 +1,13 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.security.KeyStore;
 import java.util.List;
 import java.util.*;
 
 public class IRoadTrip {
     private static HashMap<String, List> countryBordersMap = new HashMap<>();
-    private static HashMap<String, String> countryCodeMap = new HashMap<>();
+    private static HashMap<String, List<String>> countryCodeMap = new HashMap<>();
     private static HashMap<String, List<Tuple<String, Integer>>> borderDistanceMap = new HashMap<>();
 
 
@@ -15,7 +16,7 @@ public class IRoadTrip {
     }
 
 
-    public int getDistance (String country1, String country2) {
+    public int getDistance(String country1, String country2) {
         // Replace with your code
         return -1;
     }
@@ -77,72 +78,20 @@ public class IRoadTrip {
         populateCountryCodeMap("state_name.tsv");
         populateBorderDistanceMap("capdist.csv");
 
-//        printBorderDistance();
-//        printCountryBordersMap();
+//        printCountryCodeMap();
+//        printBorderDistanceMap();
 //        a3.acceptUserInput();
 
+        calculateShortestPathsFromSource("gabon", "france");
     }
 
-//    private static void populateCountryBordersMap(String fileName) {
-//        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-//            String line;
-//            while ((line = br.readLine()) != null) {
-//                String[] parts = line.split("=");
-//                if (parts.length == 2) {
-//                    String[] countryAndAlias = parts[0].trim().split("\\("); // Split at "(" to separate country and alias
-//                    String country = countryAndAlias[0].trim().toLowerCase();
-//                    String alias = null; // Store alias name if it exists
-//
-//                    if (countryAndAlias.length > 1) {
-//                        alias = countryAndAlias[1].replace(")", "").trim().toLowerCase(); // Remove ")" and trim the alias
-//                    }
-//
-//                    String countryPart = parts[0].trim().toLowerCase();
-//                    String[] countrySegments = countryPart.split(", ");
-//
-//                    List<String> borderingCountries = new ArrayList<>();
-//                    String[] borders = parts[1].split(";");
-//                    for (String border : borders) {
-//                        String[] borderParts = border.trim().split(" ");
-//                        StringBuilder countryName = new StringBuilder();
-//                        for (String part : borderParts) {
-//                            if (!part.matches(".*\\d.*") && !part.equalsIgnoreCase("km")) {
-//                                countryName.append(part).append(" ");
-//                            }
-//                        }
-//                        if (countryName.length() > 0) {
-//                            borderingCountries.add(countryName.toString().trim().toLowerCase());
-//                        }
-//                    }
-//
-//                    // Process each segment separately
-//                    for (String segment : countrySegments) {
-//                        // Exclude segments with aliases
-//                        if (alias != null) {
-//                            // Check if the segment is North or South
-//                            if (segment.equalsIgnoreCase("North") || segment.equalsIgnoreCase("South")) {
-//                                if (countryBordersMap.containsKey(countrySegments[1] + " " + countrySegments[0])) {
-//                                    countryBordersMap.get(countrySegments[1] + " " + countrySegments[0]).addAll(borderingCountries);
-//                                } else {
-//                                    countryBordersMap.put(countrySegments[1] + " " + countrySegments[0], borderingCountries);
-//                                }
-//                            }
-//                        } else {
-//                            countryBordersMap.put(segment, borderingCountries);
-//                        }
-//                    }
-//                }
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-
+    /* Populating Hashmaps */
     private static void populateCountryBordersMap(String fileName) {
         try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("=");
+
                 if (parts.length == 2) {
                     String[] countryAndAlias = parts[0].trim().split("\\("); // Split at "(" to separate country and alias
                     String country = countryAndAlias[0].trim().toLowerCase();
@@ -167,15 +116,19 @@ public class IRoadTrip {
                         }
                     }
 
-                    // If an alias exists, make a seperate entry in map
-                    if (alias != null)
+                    // If an alias exists, make a separate entry in map
+                    if (alias != null) {
                         countryBordersMap.put(alias, borderingCountries);
+                    }
 
-                    // South Korea North Korea edge case:
-                    if (country.equalsIgnoreCase("Korea, North"))
-                        countryBordersMap.put("north korea", borderingCountries);
-                    else if (country.equalsIgnoreCase("Korea, South"))
-                        countryBordersMap.put("south Korea", borderingCountries);
+                    // Handle countries with two-word names
+                    if (country.contains(",")) {
+                        String[] countryNameParts = country.split(",");
+                        if (countryNameParts.length == 2) {
+                            String updatedCountryName = countryNameParts[1].trim() + " " + countryNameParts[0].trim();
+                            countryBordersMap.put(updatedCountryName, borderingCountries);
+                        }
+                    }
 
                     countryBordersMap.put(country, borderingCountries);
                 }
@@ -197,7 +150,27 @@ public class IRoadTrip {
 
                     // Check if the data is for the most recent date (2020-12-31)
                     if (endDate.equals("2020-12-31")) {
-                        countryCodeMap.put(stateID, countryName.toLowerCase());
+                        String[] countryAndAlias = countryName.split("\\(");
+                        String country = countryAndAlias[0].trim();
+                        String alias = null;
+
+                        if (countryAndAlias.length > 1) {
+                            alias = countryAndAlias[1].replace(")", "").trim();
+                        }
+
+                        // Handle countries with commas
+                        if (country.contains(",")) {
+                            String[] countryNameParts = country.split(",");
+                            if (countryNameParts.length == 2) {
+                                country = countryNameParts[1].trim() + " " + countryNameParts[0].trim();
+                            }
+                        }
+
+                        if (alias != null) {
+                            countryCodeMap.put(stateID, List.of(country.toLowerCase(), alias.toLowerCase()));
+                        } else {
+                            countryCodeMap.put(stateID, List.of(country.toLowerCase()));
+                        }
                     }
                 }
             }
@@ -205,6 +178,7 @@ public class IRoadTrip {
             e.printStackTrace();
         }
     }
+
     private static void populateBorderDistanceMap(String fileName) {
         try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
             String line;
@@ -221,10 +195,14 @@ public class IRoadTrip {
                 int distance = Integer.parseInt(data[4].trim()); // Distance
 
                 // Fetch full country names from countryCodeMap
-                String countryA = countryCodeMap.get(ida);
-                String countryB = countryCodeMap.get(idb);
+                List<String> countryAList = countryCodeMap.get(ida);
+                List<String> countryBList = countryCodeMap.get(idb);
 
-                if (countryA != null && countryB != null) {
+                if (countryAList != null && countryBList != null) {
+                    // Choose the first country name for simplicity, assuming it's the primary name
+                    String countryA = countryAList.get(0);
+                    String countryB = countryBList.get(0);
+
                     if (countryBordersMap.containsKey(countryA) && countryBordersMap.get(countryA).contains(countryB)) {
                         Tuple<String, Integer> tuple = new Tuple<>(countryB, distance);
                         List<Tuple<String, Integer>> borderInfos = borderDistanceMap.getOrDefault(countryA, new ArrayList<>());
@@ -238,12 +216,13 @@ public class IRoadTrip {
         }
     }
 
-    private static void printBorderDistance() {
+    /* Debug */
+    private static void printBorderDistanceMap() {
         for (String country : borderDistanceMap.keySet()) {
             System.out.print(country + ": {");
             List<Tuple<String, Integer>> borderInfo = borderDistanceMap.get(country);
             for (Tuple<String, Integer> tuple : borderInfo) {
-                System.out.print(tuple.x + ": " + tuple.y + ", ");
+                System.out.print(tuple.country + ": " + tuple.distance + ", ");
             }
             System.out.print("}");
             System.out.println();
@@ -258,6 +237,87 @@ public class IRoadTrip {
             }
             System.out.println();
         }
+    }
+    public static void printCountryCodeMap() {
+        for (Map.Entry<String, List<String>> entry : countryCodeMap.entrySet()) {
+            String countryCode = entry.getKey();
+            List<String> countryNames = entry.getValue();
+
+            System.out.print(countryCode + ": ");
+            for (String name : countryNames) {
+                System.out.print(name + ", ");
+            }
+            System.out.println();
+        }
+    }
+
+
+    /* TEST */
+    private static void calculateShortestPathsFromSource(String source, String destination) {
+        Set<String> visited = new HashSet<>();
+        HashMap<String, Integer> distances = new HashMap<>();
+        HashMap<String, String> previous = new HashMap<>();
+        PriorityQueue<Tuple<String, Integer>> pq = new PriorityQueue<>(Comparator.comparingInt(t -> t.distance));
+
+        // Initialize distances with infinity for all nodes
+        for (String node : borderDistanceMap.keySet()) {
+            distances.put(node, Integer.MAX_VALUE);
+        }
+
+        // Set distance of source node to 0
+        distances.put(source, 0);
+        pq.add(new Tuple<>(source, 0));
+
+        while (!pq.isEmpty()) {
+            Tuple<String, Integer> current = pq.poll();
+            String currentCountry = current.country;
+
+            if (!visited.contains(currentCountry)) {
+                visited.add(currentCountry);
+
+                if (borderDistanceMap.containsKey(currentCountry)) {
+                    List<Tuple<String, Integer>> neighbors = borderDistanceMap.get(currentCountry);
+                    if (neighbors != null) {
+                        for (Tuple<String, Integer> neighbor : neighbors) {
+                            String neighborCountry = neighbor.country;
+                            int edgeWeight = neighbor.distance;
+
+                            // Add a check to ensure neighborCountry exists in distances
+                            if (distances.containsKey(neighborCountry)) {
+                                int newDistance = distances.get(currentCountry) + edgeWeight;
+                                if (newDistance < distances.get(neighborCountry)) {
+                                    distances.put(neighborCountry, newDistance);
+                                    previous.put(neighborCountry, currentCountry);
+                                    pq.add(new Tuple<>(neighborCountry, newDistance));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Print shortest paths
+        printShortestPath(source, destination, previous, distances);
+
+    }
+
+    private static void printShortestPath(String source, String destination, HashMap<String, String> previous, HashMap<String, Integer> distances) {
+        List<String> path = new ArrayList<>();
+        for (String country = destination; country != null; country = previous.get(country)) {
+            path.add(country);
+        }
+        Collections.reverse(path);
+
+        System.out.println("Route from " + source + " to " + destination + ":");
+        int totalDistance = distances.get(destination);
+        for (int i = 0; i < path.size() - 1; i++) {
+            String from = path.get(i);
+            String to = path.get(i + 1);
+            int dist = distances.get(to) - distances.get(from);
+            System.out.println("* " + from + " --> " + to + " (" + dist + " km.)");
+        }
+        System.out.println("Total distance: " + totalDistance + " km.");
     }
 
 
