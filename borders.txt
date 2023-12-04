@@ -1,5 +1,4 @@
 Afghanistan = China 91 km; Iran 921 km; Pakistan 2,670 km; Tajikistan 1,357 km; Turkmenistan 804 km; Uzbekistan 144 km
-Congo, Democratic Republic of the =
 Akrotiri = Cyprus 48 km
 Albania = Greece 212 km; Kosovo 112 km; Macedonia 181 km; Montenegro 186 km
 Algeria = Libya 989 km; Mali 1,359 km; Mauritania 460 km; Morocco 1,941 km; Niger 951 km; Tunisia 1,034 km
