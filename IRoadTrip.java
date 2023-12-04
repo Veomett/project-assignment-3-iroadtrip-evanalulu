@@ -17,6 +17,7 @@ public class IRoadTrip {
             System.exit(1);
         }
         try {
+            // Putting the country and its borders with distances into HashMap
             populateCountryBordersMap(args[0]);
             populateCountryCodeMap(args[2]);
             populateBorderDistanceMap(args[1]);
@@ -41,14 +42,83 @@ public class IRoadTrip {
         return -1;
     }
 
+    public List<String> findPath(String country1, String country2) {
+        country1 = country1.toLowerCase();
+        country2 =  country2.toLowerCase();
 
+        Set<String> visited = new HashSet<>();
+        HashMap<String, Integer> distances = new HashMap<>();
+        HashMap<String, String> previous = new HashMap<>();
+        PriorityQueue<Tuple<String, Integer>> pq = new PriorityQueue<>(Comparator.comparingInt(t -> t.distance));
 
+        // Initialize distances with infinity for all nodes
+        for (String node : borderDistanceMap.keySet()) {
+            distances.put(node, Integer.MAX_VALUE);
+        }
 
+        // Set distance of country1 node to 0
+        distances.put(country1, 0);
+        pq.add(new Tuple<>(country1, 0));
 
-//    public List<String> findPath(String country1, String country2) {
-//        // Replace with your code
-//        return null;
-//    }
+        while (!pq.isEmpty()) {
+            Tuple<String, Integer> current = pq.poll();
+            String currentCountry = current.country;
+
+            if (!visited.contains(currentCountry)) {
+                visited.add(currentCountry);
+
+                if (borderDistanceMap.containsKey(currentCountry)) {
+                    List<Tuple<String, Integer>> neighbors = borderDistanceMap.get(currentCountry);
+                    if (neighbors != null) {
+                        for (Tuple<String, Integer> neighbor : neighbors) {
+                            String neighborCountry = neighbor.country;
+                            int edgeWeight = neighbor.distance;
+
+                            // Calculate new distance
+                            int newDistance = distances.get(currentCountry) + edgeWeight;
+
+                            // Compare new distance to the recorded distance for neighborCountry
+                            if (newDistance < distances.getOrDefault(neighborCountry, Integer.MAX_VALUE)) {
+                                distances.put(neighborCountry, newDistance);
+                                previous.put(neighborCountry, currentCountry);
+                                pq.add(new Tuple<>(neighborCountry, newDistance));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Generate path
+        List<String> path = new ArrayList<>();
+        if (!previous.containsKey(country2)) {
+            // No path found between the countries
+            return path;
+        }
+
+        String currentCountry = country2;
+        while (!currentCountry.equals(country1)) {
+            String prevCountry = previous.get(currentCountry);
+            int distance = distances.get(currentCountry) - distances.get(prevCountry);
+            path.add(prevCountry + " --> " + currentCountry + " (" + distance + " km.)");
+            currentCountry = prevCountry;
+        }
+        Collections.reverse(path);
+
+        return path;
+    }
+
+    private static void printShortestPath(List<String> path) {
+        if (path.isEmpty()) {
+            System.out.println("No route exists.");
+            return;
+        }
+
+        System.out.println("Route:");
+        for (String step : path) {
+            System.out.println("* " + step);
+        }
+    }
 
 
     public void acceptUserInput() {
@@ -80,7 +150,8 @@ public class IRoadTrip {
                 continue;
             }
 
-            findPath(country1, country2);
+            List<String> path = findPath(country1, country2);
+            printShortestPath(path);
         }
 
     }
@@ -88,11 +159,8 @@ public class IRoadTrip {
     public static void main(String[] args) {
         IRoadTrip a3 = new IRoadTrip(args);
 
-        // Putting the country and its borders with distances into the HashMap
-
-
-        System.out.println(a3.getDistance("Nepal", "India"));
-//        a3.acceptUserInput();
+//        System.out.println(a3.findPath("Nepal", "Indonesia"));
+        a3.acceptUserInput();
     }
 
     /* Populating Hashmaps */
@@ -199,7 +267,6 @@ public class IRoadTrip {
             e.printStackTrace();
         }
     }
-
     private static void populateBorderDistanceMap(String fileName) throws IOException {
         try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
             String line;
@@ -271,76 +338,5 @@ public class IRoadTrip {
             System.out.println();
         }
     }
-
-
-    /* TEST */
-    private static void findPath(String source, String destination) {
-        Set<String> visited = new HashSet<>();
-        HashMap<String, Integer> distances = new HashMap<>();
-        HashMap<String, String> previous = new HashMap<>();
-        PriorityQueue<Tuple<String, Integer>> pq = new PriorityQueue<>(Comparator.comparingInt(t -> t.distance));
-
-        // Initialize distances with infinity for all nodes
-        for (String node : borderDistanceMap.keySet()) {
-            distances.put(node, Integer.MAX_VALUE);
-        }
-
-        // Set distance of source node to 0
-        distances.put(source, 0);
-        pq.add(new Tuple<>(source, 0));
-
-        while (!pq.isEmpty()) {
-            Tuple<String, Integer> current = pq.poll();
-            String currentCountry = current.country;
-
-            if (!visited.contains(currentCountry)) {
-                visited.add(currentCountry);
-
-                if (borderDistanceMap.containsKey(currentCountry)) {
-                    List<Tuple<String, Integer>> neighbors = borderDistanceMap.get(currentCountry);
-                    if (neighbors != null) {
-                        for (Tuple<String, Integer> neighbor : neighbors) {
-                            String neighborCountry = neighbor.country;
-                            int edgeWeight = neighbor.distance;
-
-                            // Calculate new distance
-                            int newDistance = distances.get(currentCountry) + edgeWeight;
-
-                            // Compare new distance to the recorded distance for neighborCountry
-                            if (newDistance < distances.getOrDefault(neighborCountry, Integer.MAX_VALUE)) {
-                                distances.put(neighborCountry, newDistance);
-                                previous.put(neighborCountry, currentCountry);
-                                pq.add(new Tuple<>(neighborCountry, newDistance));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Print shortest paths
-        printShortestPath(source, destination, previous, distances);
-    }
-
-    private static void printShortestPath(String source, String destination, HashMap<String, String> previous, HashMap<String, Integer> distances) {
-        List<String> path = new ArrayList<>();
-        for (String country = destination; country != null; country = previous.get(country)) {
-            path.add(country);
-        }
-        Collections.reverse(path);
-
-        System.out.println("Route from " + source + " to " + destination + ":");
-        int totalDistance = distances.get(destination);
-        for (int i = 0; i < path.size() - 1; i++) {
-            String from = path.get(i);
-            String to = path.get(i + 1);
-            int dist = distances.get(to) - distances.get(from);
-            System.out.println("* " + from + " --> " + to + " (" + dist + " km.)");
-        }
-        System.out.println("Total distance: " + totalDistance + " km.");
-    }
-
-
-
 }
 
