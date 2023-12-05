@@ -168,8 +168,10 @@ public class IRoadTrip {
             System.out.print("Enter the name of the first country (type EXIT to quit): ");
             String country1 = scanner.nextLine().trim().toLowerCase();
 
-            if (country1.equalsIgnoreCase("EXIT"))
+            if (country1.equalsIgnoreCase("EXIT")) {
+                System.out.println("Goodbye (˶ᵔ ᵕ ᵔ˶).");
                 break;
+            }
 
             if (!countryBordersMap.containsKey(country1)) {
                 System.out.println("Invalid country name. Please enter a valid country name.");
