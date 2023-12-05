@@ -244,13 +244,19 @@ public class IRoadTrip {
                             if (!part.matches(".*\\d.*") && !part.equalsIgnoreCase("km") && !hasAlias) {
                                 countryName.append(part).append(" ");
                             }
-
                         }
+
                         if (countryName.length() > 0 && !hasAlias) {
                             borderingCountries.add(countryName.toString().trim().toLowerCase());
                         } else {
                             borderingCountries.add(countryName.toString().trim().toLowerCase());
                             borderingCountries.add(borderAlias);
+                        }
+                        // edge cases
+                        if (countryName.equals("canada") || countryName.equals("mexico")) {
+                            borderingCountries.add("united states");
+                            borderingCountries.add("united states of america");
+                            borderingCountries.add("usa");
                         }
                     }
 
@@ -266,6 +272,20 @@ public class IRoadTrip {
                             String updatedCountryName = countryNameParts[1].trim() + " " + countryNameParts[0].trim();
                             countryBordersMap.put(updatedCountryName, borderingCountries);
                         }
+                    }
+
+                    // Edge cases:
+                    if (country.equalsIgnoreCase("canada") || country.equalsIgnoreCase("mexico")) {
+                        borderingCountries.add("united states");
+                        borderingCountries.add("united states of america");
+                        borderingCountries.add("usa");
+                    }
+
+                    // Edge cases:
+                    if (country.equalsIgnoreCase("united states")) {
+                        countryBordersMap.put("us", borderingCountries);
+                        countryBordersMap.put("usa", borderingCountries);
+                        countryBordersMap.put("united states of america", borderingCountries);
                     }
 
                     countryBordersMap.put(country, borderingCountries);
@@ -322,6 +342,22 @@ public class IRoadTrip {
                         } else {
                             countryCodeMap.put(stateID, List.of(country.toLowerCase()));
                         }
+
+                        // Edge cases:
+                        if (stateID.equals("USA")) {
+                            List<String> usaValues = new ArrayList<>(countryCodeMap.getOrDefault(stateID, new ArrayList<>()));
+                            usaValues.addAll(List.of("united states", "usa", "us"));
+                            countryCodeMap.put(stateID, usaValues);
+                        } else if (stateID.equals("TUR")) {
+                            List<String> turValues = new ArrayList<>(countryCodeMap.getOrDefault(stateID, new ArrayList<>()));
+                            turValues.addAll(List.of("turkiye"));
+                            countryCodeMap.put(stateID, turValues);
+                        } else if (stateID.equals("MAC")) {
+                            List<String> macValues = new ArrayList<>(countryCodeMap.getOrDefault(stateID, new ArrayList<>()));
+                            macValues.addAll(List.of("north macedonia"));
+                            countryCodeMap.put(stateID, macValues);
+                        }
+
                     }
                 }
             }
@@ -372,6 +408,12 @@ public class IRoadTrip {
                         List<Tuple<String, Integer>> borderInfos = borderDistanceMap.getOrDefault(countryA, new ArrayList<>());
                         borderInfos.add(tuple);
                         borderDistanceMap.put(countryA, borderInfos);
+
+                        if (countryA.equalsIgnoreCase("united states of america")) {
+                            borderDistanceMap.put("usa", borderInfos);
+                            borderDistanceMap.put("us", borderInfos);
+                            borderDistanceMap.put("united states", borderInfos);
+                        }
                     }
                 }
             }
